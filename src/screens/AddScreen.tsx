@@ -35,6 +35,7 @@ export function AddScreen({ onOpenHistory }: { onOpenHistory(): void }) {
   const store = useStore();
   const { index, transactions, budgets } = store;
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [draftCount, setDraftCount] = useState(0);
   const [editing, setEditing] = useState<Draft | null>(null);
 
   const period = currentPeriod();
@@ -55,7 +56,12 @@ export function AddScreen({ onOpenHistory }: { onOpenHistory(): void }) {
 
       <QuickAdd onSplit={(d) => setEditing(d)} />
 
-      <SmartInput onDrafts={(ds) => setDrafts(ds)} />
+      <SmartInput
+        onDrafts={(ds) => {
+          setDrafts(ds);
+          setDraftCount(ds.length);
+        }}
+      />
 
       {statuses.length > 0 && (
         <Card withBorder>
@@ -86,7 +92,7 @@ export function AddScreen({ onOpenHistory }: { onOpenHistory(): void }) {
       {/* AI drafts are reviewed one at a time. */}
       <ExpenseEditor
         draft={drafts[0] ?? null}
-        title={drafts.length > 1 ? `Check and save (1 of ${drafts.length})` : undefined}
+        title={draftCount > 1 ? `Check and save (${draftCount - drafts.length + 1} of ${draftCount})` : undefined}
         onClose={() => setDrafts((d) => d.slice(1))}
       />
       <ExpenseEditor
@@ -245,7 +251,7 @@ function QuickAdd({ onSplit }: { onSplit(d: Draft): void }) {
 
 /** Paste text or snap a receipt; Claude turns it into draft expenses. */
 function SmartInput({ onDrafts }: { onDrafts(drafts: Draft[]): void }) {
-  const { index, merchantRules, transactions, ruleForMerchant, repo } = useStore();
+  const { index, merchantRules, transactions, ruleForMerchant, repo, loading } = useStore();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -281,9 +287,10 @@ function SmartInput({ onDrafts }: { onDrafts(drafts: Draft[]): void }) {
     }
   }
 
-  // Android "Share to app": /?text=...
+  // Text handed over in the link: Android "Share to app" or an iPhone Shortcut (/?text=...).
+  // Waits until categories have loaded, otherwise every item would come back uncategorised.
   useEffect(() => {
-    if (autoRan.current) return;
+    if (autoRan.current || loading || !index.leaves.length) return;
     const params = new URLSearchParams(window.location.search);
     const shared = [params.get('title'), params.get('text'), params.get('url')].filter(Boolean).join('\n');
     if (!shared) return;
@@ -292,7 +299,7 @@ function SmartInput({ onDrafts }: { onDrafts(drafts: Draft[]): void }) {
     setText(shared);
     void run({ text: shared });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading, index.leaves.length]);
 
   return (
     <Card withBorder>

@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Budget, BudgetAlert, Category, LineItem, MerchantRule, Snapshot, Transaction } from '../lib/types';
+import { supabaseConfig } from '../lib/config';
 import type { Repo } from './repo';
 
 const PAGE = 1000;
@@ -9,7 +10,7 @@ export const HOUSEHOLD_EMAIL = import.meta.env.VITE_HOUSEHOLD_EMAIL || 'househol
 let client: SupabaseClient | null = null;
 export function supabase(): SupabaseClient {
   if (!client) {
-    client = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY, {
+    client = createClient(supabaseConfig.url, supabaseConfig.key, {
       auth: { persistSession: true, autoRefreshToken: true },
     });
   }
@@ -17,7 +18,7 @@ export function supabase(): SupabaseClient {
 }
 
 export function supabaseConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_KEY);
+  return !supabaseConfig.demo;
 }
 
 /** Supabase calls return {data, error}; this throws on error instead. */

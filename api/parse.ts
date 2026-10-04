@@ -1,3 +1,4 @@
+import { readSupabaseConfig } from './_lib/supabase-config.js';
 import { ParseError, ParseRequestSchema, parseExpense } from './_lib/parse-core.js';
 
 /**
@@ -20,13 +21,13 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 async function requireHousehold(request: Request): Promise<void> {
-  const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_KEY;
-  if (!url || !key) {
+  const { url, key, demo, problems } = readSupabaseConfig(process.env);
+  if (demo) {
     // Local demo mode only: the dev server sets this flag.
     if (process.env.PARSE_ALLOW_UNAUTHENTICATED === '1') return;
     throw new ParseError('Server is not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_KEY.', 500);
   }
+  if (problems.length) throw new ParseError(problems[0], 500);
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) throw new ParseError('Not signed in.', 401);
   const res = await fetch(`${url}/auth/v1/user`, {

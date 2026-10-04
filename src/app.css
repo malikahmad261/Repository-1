@@ -1,0 +1,12 @@
+body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.amount-input input {
+  font-size: 1.75rem;
+  font-weight: 600;
+  height: 3.5rem;
+}

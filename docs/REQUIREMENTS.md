@@ -1,8 +1,7 @@
 # Household Expense Tracker — Requirements (v0.1, draft for review)
 
-> Status: **Draft — awaiting your feedback.** Nothing is built yet. Items marked
-> **❓ Decision** need your answer before development starts (they're also
-> collected in [Section 10](#10-open-questions-for-you)).
+> Status: **Approved (v1.0).** Phase 1 is built. Your decisions are recorded in
+> [Section 10](#10-decisions).
 
 ---
 
@@ -72,13 +71,12 @@ screen creates the single line item for you.
 | date | date (+ optional time) | ✅ | Defaults to today |
 | merchant | text | – | "Tesco", "Uber". Used to learn categories. |
 | total_amount | decimal | ✅ | Must equal the sum of line items (see 3.4) |
-| currency | ISO code | ✅ | Defaults to household currency ❓ |
-| payment_method | enum | – | Card / Cash / Bank transfer / Other (editable list) |
-| paid_by | enum | – | Household member, e.g. "Me", "Partner" ❓ |
+| currency | ISO code | ✅ | PKR |
+| payment_method | enum | – | Card / Cash / Bank transfer / Mobile wallet / Other |
 | notes | text | – | |
 | source | enum | auto | `manual`, `text`, `photo`, `share` |
 | raw_input | text | auto | The original pasted text, kept for audit and re-parsing |
-| receipt_image | file | – | Kept if you add a photo ❓ (storage) |
+| receipt_image | file | – | Kept for 60 days after upload, then deleted automatically |
 | status | enum | auto | `confirmed` or `needs_review` (see §4.6) |
 | created_at / updated_at | timestamp | auto | |
 
@@ -131,7 +129,7 @@ Proposed starter set (fully editable in Settings):
 |---|---|
 | scope | A **category** or a **subcategory** (e.g. all of *Eating out*, or just *Takeaway*). Optionally "all discretionary spending". |
 | amount | per period |
-| period | Monthly (Phase 1). Starts on the 1st by default; the start day is configurable (e.g. payday) ❓ |
+| period | Monthly (Phase 1). Starts on the 1st |
 | thresholds | Default **50%, 75%, 90%, 100%**, editable per budget |
 | alerted_thresholds | Tracks which alerts have already fired this period, so you aren't alerted twice |
 
@@ -230,12 +228,9 @@ runs every time a transaction is saved.
 |---|---|---|
 | **In-app alert** after saving (e.g. "Eating out is at 76% of £300, £72 left, 18 days to go") | **Phase 1** | The person adding the expense |
 | Coloured budget bars on the home screen (green < 75%, amber 75–99%, red ≥ 100%) | **Phase 1** | Everyone |
-| **Push notification** to *every* household phone | **Phase 1b** (right after the core is stable) | Everyone, even if the app is closed |
+| Push notifications to other phones | Not planned (not needed for now) | – |
 | Weekly summary notification | Phase 2 | Everyone |
 
-Push notifications work on Android and on iPhone (iOS 16.4+, only once the app
-is added to the Home Screen). They need a small server component, which is
-why they come in Phase 1b.
 
 ### 5.2 Alert rules
 - Each threshold fires **once per budget per period**.
@@ -262,7 +257,7 @@ why they come in Phase 1b.
 |---|---|---|
 | UI framework | **React + TypeScript + Vite** | Industry standard, fast |
 | Component library | **Mantine UI** | Polished mobile-friendly components out of the box (forms, chips, number inputs, drawers, notifications), so there's almost no custom styling |
-| PWA | **vite-plugin-pwa** | Installable app, offline support, push |
+| PWA | **vite-plugin-pwa** | Installable app, offline support |
 | Database + sync | **Supabase** (hosted Postgres, free tier) | Data is shared across all household phones, has built-in file storage for receipts, and needs no server to manage |
 | AI parsing | **Claude API** via a small serverless function | Reads text and receipt photos into structured line items |
 | Hosting | **Vercel** (free tier), connected to the GitHub repo | Every push to GitHub redeploys automatically |
@@ -284,10 +279,6 @@ Rough cost for this app, based on current API prices:
 Pasted text costs less than photos. You can set a **monthly spend limit** in
 the Anthropic console (e.g. $10) so there are no surprises. Manual entry
 never uses the API.
-
-If you'd rather pay nothing, there's a fallback: a built-in text parser that
-handles bank SMS formats and shorthand like `uber 12.50` without any AI. Photo
-reading and smart item splitting would not be available. ❓
 
 What your Claude subscription *is* good for is this conversation: designing,
 building and fixing the app with Claude Code.
@@ -321,7 +312,6 @@ Running cost: **$0 hosting** (free tiers) plus **API usage only** (~$1–5/month
 | **M2: Sync** | Supabase, passcode, shared data across phones, CSV export | Use it as a household |
 | **M3: Smart input** | Paste text and photo → AI draft → review card with questions, merchant memory, duplicate check | Log a whole grocery receipt in seconds |
 | **M4: Budgets** | Budgets, progress bars, in-app threshold alerts | Get warned at 50/75/90/100% |
-| **M4b: Push** | Push notifications to all household phones | Get alerts even when someone else logs |
 | *Phase 2* | Analytics, trends, necessary-vs-discretionary reports, planning | Plan and budget |
 
 Each milestone is a pull request you can try on a preview link before merging.
@@ -337,13 +327,22 @@ Each milestone is a pull request you can try on a preview link before merging.
 
 ---
 
-## 10. Open questions for you
+## 10. Decisions
 
-1. **Currency:** what is your household currency? Do you ever need multiple currencies (e.g. travel)?
-2. **Household members:** who will log expenses (names for "paid by"), and should each person's phone get alerts?
-3. **AI parsing:** OK to set up a Claude API key (~$1–5/month)? Or start with the free non-AI parser?
-4. **Receipt photos:** keep the image after parsing (useful for warranties and returns) or discard it?
-5. **Budget month:** start on the 1st, or on another day (e.g. payday)?
-6. **Categories:** any changes to the starter list in §3.3? Anything you know you want to budget for specifically?
-7. **Bank SMS/email:** can you share 2–3 real examples (with card numbers masked) so I can test the parser against your bank's format?
-8. **Hosting:** OK with Supabase + Vercel free tiers, which need two free sign-ups?
+| # | Question | Decision |
+|---|---|---|
+| 1 | Currency | **PKR** only |
+| 2 | Household members and alerts | No "paid by" field and no push notifications. Budget alerts show in the app on the phone that logs the expense. |
+| 3 | AI parsing | **Claude API key**, using Claude Opus 5.5 |
+| 4 | Receipt photos | Keep after parsing, **delete after 60 days** |
+| 5 | Budget month | Starts on the **1st** |
+| 6 | Categories | Starter list as in §3.3 |
+| 7 | Bank SMS samples | Not needed |
+| 8 | Hosting | **Supabase + Vercel** free tiers |
+
+### Implementation notes
+- "One household passcode" is a single Supabase login. The app fills in its email, so you only type the password.
+- Receipt cleanup runs when the app opens: photos older than 60 days are removed, and the expense itself is kept.
+- Long receipts are grouped by subcategory (e.g. "Bread, eggs, milk") rather than shown as expandable groups.
+- Android "Share to app" supports text (SMS, emails). Sharing images in, and the iOS Shortcut, are possible follow-ups.
+- The API call has Anthropic's server-side fallback switched on: if Opus 5.5 declines a request, the API retries it on another model automatically.

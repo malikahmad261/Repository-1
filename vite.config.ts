@@ -11,7 +11,8 @@ function devApi(): Plugin {
     name: 'dev-api',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        const match = req.url?.match(/^\/api\/([\w-]+)/);
+        // Function routes only (e.g. /api/parse), not source files such as /api/_lib/*.ts.
+        const match = req.url?.match(/^\/api\/([a-z][\w-]*)(?:\?|$)/);
         if (!match) return next();
         try {
           const mod = await server.ssrLoadModule(`/api/${match[1]}.ts`);

@@ -2,6 +2,8 @@ import { AppShell, Badge, Center, Group, Loader, Text, UnstyledButton } from '@m
 import { IconChartPie, IconList, IconPlus, IconSettings } from '@tabler/icons-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DuplicateGuardProvider } from './components/DuplicateGuard';
+import { SetupProblem } from './components/ErrorScreens';
+import { supabaseConfig } from './lib/config';
 import { LockScreen } from './components/LockScreen';
 import { LocalRepo } from './data/localRepo';
 import { StoreProvider, useStore } from './data/store';
@@ -14,6 +16,11 @@ import { SettingsScreen } from './screens/SettingsScreen';
 export type Tab = 'add' | 'history' | 'budgets' | 'settings';
 
 export function App() {
+  if (supabaseConfig.problems.length) return <SetupProblem problems={supabaseConfig.problems} />;
+  return <ConfiguredApp />;
+}
+
+function ConfiguredApp() {
   const configured = supabaseConfigured();
   const [session, setSession] = useState<'loading' | 'in' | 'out'>(configured ? 'loading' : 'in');
 
